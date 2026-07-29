@@ -525,6 +525,10 @@ function sampleChairContacts(p) {
   });
 }
 
+function bodyCrashRadius(p) {
+  return 24 + Math.abs(Math.sin(p.angle)) * 38;
+}
+
 function update(dt) {
   simulationSteps += 1;
   state.elapsed += dt;
@@ -666,7 +670,7 @@ function update(dt) {
       addEffect(5, p.x - 54, p.y + 35, 100, 0.38, tangentAngle);
     }
 
-    const bodyClearance = 24 + Math.abs(Math.sin(p.angle)) * 38;
+    const bodyClearance = bodyCrashRadius(p);
     if (p.y + bodyClearance > terrainY(p.x) + 8 && Math.abs(angleDelta(Math.atan(terrainSlope(p.x)), p.angle)) > 1.15) {
       p.airTime = 0;
       p.rotationAccum = 0;
@@ -969,23 +973,174 @@ function drawEffects(screenSpace) {
   }
 }
 
-function drawRacer() {
-  const p = state.player;
-  const speed = Math.abs(p.vx);
-  const pose = p.airTime > 0.06 ? 2 : state.landTimer > 0 ? 3 : speed > 920 ? 1 : 0;
-  const cell = 627;
-  const col = pose % 2;
-  const row = Math.floor(pose / 2);
-  const size = 278;
+function drawDebugArrow(fromX, fromY, toX, toY, color, label = "") {
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const head = 11;
   ctx.save();
-  ctx.translate(p.x, p.y - 14);
-  ctx.rotate(p.angle);
-  if (state.coffee > 0) {
-    ctx.globalAlpha = 0.72;
-    drawAtlasSprite(images.vfx, 3, 3, 1, -122, 12, 155, 0, 0.72);
+  ctx.strokeStyle = colors.nearInk;
+  ctx.lineWidth = 9;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = colors.nearInk;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - Math.cos(angle - 0.55) * head, toY - Math.sin(angle - 0.55) * head);
+  ctx.lineTo(toX - Math.cos(angle + 0.55) * head, toY - Math.sin(angle + 0.55) * head);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fill();
+  if (label) {
+    ctx.font = "900 15px Impact, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "bottom";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = colors.nearInk;
+    ctx.strokeText(label, toX + 9, toY - 6);
+    ctx.fillStyle = color;
+    ctx.fillText(label, toX + 9, toY - 6);
   }
-  ctx.globalAlpha = 1;
-  ctx.drawImage(images.racer, col * cell, row * cell, cell, cell, -size * 0.53, -size * 0.54, size, size);
+  ctx.restore();
+}
+
+function drawPlayerColliders(p = state.player, { showGround = true, showVelocity = true } = {}) {
+  const contacts = sampleChairContacts(p);
+  const bodyRadius = bodyCrashRadius(p);
+  const bodyActive =
+    !p.grounded &&
+    p.y + bodyRadius > terrainY(p.x) + 8 &&
+    Math.abs(angleDelta(Math.atan(terrainSlope(p.x)), p.angle)) > 1.15;
+
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  ctx.strokeStyle = colors.nearInk;
+  ctx.lineWidth = 13;
+  ctx.beginPath();
+  ctx.moveTo(contacts[0].worldX, contacts[0].worldY);
+  ctx.lineTo(contacts[1].worldX, contacts[1].worldY);
+  ctx.stroke();
+  ctx.strokeStyle = colors.yellow;
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  ctx.setLineDash([10, 7]);
+  ctx.fillStyle = bodyActive ? "rgb(217 58 49 / 34%)" : "rgb(255 216 61 / 16%)";
+  ctx.strokeStyle = colors.nearInk;
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, bodyRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = bodyActive ? colors.red : colors.yellow;
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (const contact of contacts) {
+    const active = contact.contact;
+    ctx.fillStyle = active ? "rgb(183 219 53 / 42%)" : "rgb(121 183 201 / 24%)";
+    ctx.strokeStyle = colors.nearInk;
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.arc(contact.worldX, contact.worldY, contact.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = active ? colors.lime : colors.cyan;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = active ? colors.lime : colors.white;
+    ctx.strokeStyle = colors.nearInk;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(contact.worldX, contact.worldY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    if (showGround) {
+      const contactY = contact.ground;
+      ctx.strokeStyle = active ? colors.lime : colors.cyan;
+      ctx.lineWidth = 3;
+      ctx.setLineDash(active ? [] : [7, 7]);
+      ctx.beginPath();
+      ctx.moveTo(contact.worldX, contact.worldY + contact.radius);
+      ctx.lineTo(contact.worldX, contactY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = active ? colors.lime : colors.cyan;
+      ctx.strokeStyle = colors.nearInk;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.rect(contact.worldX - 5, contactY - 5, 10, 10);
+      ctx.fill();
+      ctx.stroke();
+      drawDebugArrow(
+        contact.worldX,
+        contactY,
+        contact.worldX + contact.nx * 58,
+        contactY + contact.ny * 58,
+        active ? colors.lime : colors.cyan,
+        "N",
+      );
+    }
+
+    const contactLabel = `${contact.name.toUpperCase()} ${active ? "ON" : "OFF"}`;
+    const labelY = contact.worldY + contact.radius + 18;
+    ctx.font = "900 14px Impact, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = colors.nearInk;
+    ctx.strokeText(contactLabel, contact.worldX, labelY);
+    ctx.fillStyle = active ? colors.lime : colors.cyan;
+    ctx.fillText(contactLabel, contact.worldX, labelY);
+  }
+
+  ctx.strokeStyle = colors.white;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(p.x - 13, p.y);
+  ctx.lineTo(p.x + 13, p.y);
+  ctx.moveTo(p.x, p.y - 13);
+  ctx.lineTo(p.x, p.y + 13);
+  ctx.stroke();
+  ctx.fillStyle = colors.nearInk;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (showVelocity) {
+    const speed = Math.hypot(p.vx, p.vy);
+    const arrowLength = clamp(speed * 0.095, 70, 170);
+    const speedScale = arrowLength / Math.max(1, speed);
+    drawDebugArrow(
+      p.x,
+      p.y,
+      p.x + p.vx * speedScale,
+      p.y + p.vy * speedScale,
+      colors.orange,
+      "VELOCITY",
+    );
+  }
+
+  ctx.font = "900 15px Impact, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = colors.nearInk;
+  ctx.strokeText("BODY PROBE", p.x, p.y - bodyRadius - 24);
+  ctx.fillStyle = bodyActive ? colors.red : colors.yellow;
+  ctx.fillText("BODY PROBE", p.x, p.y - bodyRadius - 24);
   ctx.restore();
 }
 
@@ -1099,14 +1254,18 @@ function drawMenu() {
   drawNearRidge();
   ctx.fillStyle = "rgb(8 16 28 / 18%)";
   ctx.fillRect(0, 0, W, H);
-  if (images.racer) {
-    const cell = 627;
-    ctx.save();
-    ctx.translate(925, 390);
-    ctx.rotate(-0.03);
-    ctx.drawImage(images.racer, 0, 0, cell, cell, -245, -245, 490, 490);
-    ctx.restore();
-  }
+  drawPlayerColliders(
+    {
+      x: 935,
+      y: 370,
+      vx: 850,
+      vy: -210,
+      angle: -0.14,
+      av: 0.7,
+      grounded: false,
+    },
+    { showGround: false },
+  );
   ctx.save();
   ctx.translate(70, 125);
   ctx.rotate(-0.035);
@@ -1188,7 +1347,7 @@ function render() {
   drawTerrain();
   drawCollectibles();
   drawEffects(false);
-  drawRacer();
+  drawPlayerColliders();
   endWorldCamera();
 
   if (state.flash !== 0) {
@@ -1199,6 +1358,7 @@ function render() {
   }
 
   drawHud();
+  draw3DText("PHYSICS VIEW", 780, 43, 21, colors.yellow, { stroke: 5, extrusion: 3 });
   drawControls();
   if (!state.paused) drawTrickCallout();
   drawEffects(true);
@@ -1255,6 +1415,17 @@ window.render_game_to_text = () =>
       airTime: Number(state.player.airTime.toFixed(2)),
       terrainY: Number(terrainY(state.player.x).toFixed(2)),
       terrainSlope: Number(terrainSlope(state.player.x).toFixed(3)),
+      debugRender: "colliders-only",
+      colliders: sampleChairContacts(state.player).map((contact) => ({
+        name: contact.name,
+        centerX: Number(contact.worldX.toFixed(2)),
+        centerY: Number(contact.worldY.toFixed(2)),
+        radius: contact.radius,
+        penetration: Number(contact.penetration.toFixed(2)),
+        normalVelocity: Number(contact.normalVelocity.toFixed(2)),
+        active: contact.contact,
+      })),
+      bodyProbeRadius: Number(bodyCrashRadius(state.player).toFixed(2)),
     },
     input: {
       leftBrakeLeanBack: state.inputs.left,
