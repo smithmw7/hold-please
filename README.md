@@ -1,23 +1,27 @@
-# HOLD PLEASE
+# Hightop Office Arcade
 
-A fast, one-thumb portrait physics game about staying on a serious phone call while the office falls apart.
+Two fast physics games starring the most committed person on the call.
 
 ## Play
 
-**[Play HOLD PLEASE](https://smithmw7.github.io/hold-please/)**
+- **[Play CHAIR RALLY: OVERTIME](https://smithmw7.github.io/hold-please/chair-rally/)** — a landscape hill racer powered by batteries, coffee, and questionable office-chair engineering.
+- **[Play HOLD PLEASE](https://smithmw7.github.io/hold-please/)** — a portrait one-thumb physics game about staying on a serious phone call while the office falls apart.
 
-Tap anywhere to punt the chair in that direction. Hit office props to build a combo, grab temporary boosts, avoid staplers and desk phones, and keep the call alive for 20 seconds.
+## CHAIR RALLY controls
 
-## Controls
+- Hold the right side to accelerate and lean forward in the air.
+- Hold the left side to brake and lean back.
+- Collect batteries to keep moving and coffee for temporary overdrive.
+- Arrow keys also work on desktop.
 
-- Tap or click toward a target to launch.
-- Arrow keys also launch on desktop.
-- Press `F` to toggle fullscreen.
-- Press `Enter` or `Space` to start a new call.
+## HOLD PLEASE controls
+
+- Tap anywhere to punt the chair toward that point.
+- Hit office props, build combos, avoid staplers, and survive the 20-second call.
 
 ## Project
 
-The game uses a single HTML canvas, vanilla JavaScript physics, and custom raster sprite sheets. No framework or build step is required.
+Both games use HTML canvas, vanilla JavaScript physics, and custom raster sprite sheets. CHAIR RALLY also uses WebGL shader-warped terrain and a procedural Web Audio soundtrack. No framework or build step is required.
 
 Run locally:
 

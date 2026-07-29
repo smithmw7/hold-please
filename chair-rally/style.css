@@ -1,0 +1,89 @@
+:root {
+  color-scheme: dark;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", system-ui, sans-serif;
+  background: #08101c;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, #263d5c 0, #0d1829 58%, #070c15 100%);
+}
+
+#game-shell {
+  position: relative;
+  width: min(100vw, calc(100dvh * 16 / 9));
+  height: min(100dvh, calc(100vw * 9 / 16));
+  overflow: hidden;
+  background: #172844;
+  box-shadow: 0 0 80px rgb(0 0 0 / 55%);
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+button {
+  position: absolute;
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  cursor: pointer;
+}
+
+#start-button,
+#restart-button {
+  left: 38%;
+  bottom: 8%;
+  width: 24%;
+  height: 14%;
+}
+
+#mute-button {
+  right: 2%;
+  top: 3.4%;
+  width: 5.8%;
+  height: 7.4%;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+#pause-button {
+  right: 8.9%;
+  top: 3.4%;
+  width: 5.8%;
+  height: 7.4%;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+button[hidden] {
+  display: none;
+}
+
+button:focus-visible {
+  opacity: 1;
+  outline: 4px solid #fffdf4;
+  outline-offset: 3px;
+}

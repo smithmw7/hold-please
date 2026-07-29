@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#14233b" />
+    <title>Chair Rally: Overtime</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="game-shell">
+      <canvas id="game" width="1280" height="720" aria-label="Chair Rally Overtime game"></canvas>
+      <button id="start-button" type="button">Start Chair Rally</button>
+      <button id="restart-button" type="button" hidden>Restart Chair Rally</button>
+      <button id="mute-button" type="button" aria-label="Mute audio" aria-pressed="false">Mute audio</button>
+      <button id="pause-button" type="button" aria-label="Pause game" aria-pressed="false" hidden>Pause game</button>
+    </main>
+    <script type="module" src="./game.js"></script>
+  </body>
+</html>
