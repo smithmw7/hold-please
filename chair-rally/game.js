@@ -12,6 +12,9 @@ const W = 1280;
 const H = 720;
 const STEP = 1 / 120;
 const ROAD_HALF_WIDTH = 30;
+const ROAD_DASH_LENGTH = 34;
+const ROAD_DASH_GAP = 32;
+const ROAD_DASH_PERIOD = ROAD_DASH_LENGTH + ROAD_DASH_GAP;
 const BODY_CLEARANCE = 58;
 const TERRAIN_SPACING = 310;
 const RUN_SEED = 7412026;
@@ -134,6 +137,32 @@ function terrainY(x) {
 
 function terrainSlope(x) {
   return (terrainY(x + 3) - terrainY(x - 3)) / 6;
+}
+
+const ROAD_ARC_STEP = 7;
+const roadArcMinX = terrainPoints[0].x;
+const roadArcMaxX = terrainPoints[terrainPoints.length - 1].x;
+const roadArcLengths = [0];
+let roadArcPreviousX = roadArcMinX;
+let roadArcPreviousY = terrainY(roadArcMinX);
+let roadArcTotal = 0;
+for (let x = roadArcMinX + ROAD_ARC_STEP; x <= roadArcMaxX + ROAD_ARC_STEP; x += ROAD_ARC_STEP) {
+  const sampleX = Math.min(x, roadArcMaxX);
+  const sampleY = terrainY(sampleX);
+  roadArcTotal += Math.hypot(sampleX - roadArcPreviousX, sampleY - roadArcPreviousY);
+  roadArcLengths.push(roadArcTotal);
+  roadArcPreviousX = sampleX;
+  roadArcPreviousY = sampleY;
+}
+
+function roadArcLengthAt(x) {
+  const clampedX = clamp(x, roadArcMinX, roadArcMaxX);
+  const rawIndex = (clampedX - roadArcMinX) / ROAD_ARC_STEP;
+  const index = Math.floor(rawIndex);
+  const fraction = rawIndex - index;
+  const current = roadArcLengths[Math.min(index, roadArcLengths.length - 1)] ?? 0;
+  const next = roadArcLengths[Math.min(index + 1, roadArcLengths.length - 1)] ?? current;
+  return current + (next - current) * fraction;
 }
 
 function angleDelta(target, current) {
@@ -917,7 +946,8 @@ function drawTerrain() {
   ctx.fill(groundPath);
   ctx.restore();
 
-  const road = buildRoadPath(fromX - 100, toX + 100);
+  const roadStartX = fromX - 100;
+  const road = buildRoadPath(roadStartX, toX + 100);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.strokeStyle = colors.nearInk;
@@ -930,12 +960,13 @@ function drawTerrain() {
   ctx.lineWidth = ROAD_HALF_WIDTH * 2;
   ctx.stroke(road);
 
-  ctx.setLineDash([34, 32]);
-  ctx.lineDashOffset = -state.camera.x * 0.28;
+  ctx.setLineDash([ROAD_DASH_LENGTH, ROAD_DASH_GAP]);
+  ctx.lineDashOffset = roadArcLengthAt(roadStartX) % ROAD_DASH_PERIOD;
   ctx.strokeStyle = "rgb(255 253 244 / 72%)";
   ctx.lineWidth = 4;
   ctx.stroke(road);
   ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
 }
 
 function drawAtlasSprite(image, cols, rows, cell, x, y, size, rotation = 0, alpha = 1) {
@@ -1451,6 +1482,11 @@ window.render_game_to_text = () =>
     combo: state.combo,
     trick: state.trickTimer > 0 ? state.trickText : null,
     shaderGround: Boolean(groundShader?.isShader),
+    roadDash: {
+      worldAnchored: true,
+      period: ROAD_DASH_PERIOD,
+      phaseAtPlayer: Number((roadArcLengthAt(state.player.x) % ROAD_DASH_PERIOD).toFixed(2)),
+    },
     muted: audio.muted,
     simulationSteps,
   });
